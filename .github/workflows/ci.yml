@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+          cache-dependency-path: |
+            services/api/go.sum
+            services/worker/go.sum
+      - name: Lint API
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: services/api
+          args: ./...
+      - name: Lint Worker
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          working-directory: services/worker
+          args: ./...
+
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache: true
+          cache-dependency-path: |
+            services/api/go.sum
+            services/worker/go.sum
+      - name: Test API
+        working-directory: services/api
+        run: go test ./...
+      - name: Test Worker
+        working-directory: services/worker
+        run: go test ./...
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build API image
+        run: docker build -f services/api/Dockerfile -t devops-api:ci .
+      - name: Build Worker image
+        run: docker build -f services/worker/Dockerfile -t devops-worker:ci .
+      - name: Save API image
+        run: docker save devops-api:ci -o api-image.tar
+      - name: Save Worker image
+        run: docker save devops-worker:ci -o worker-image.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: built-images
+          path: |
+            api-image.tar
+            worker-image.tar
+
+  scan:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: built-images
+      - name: Load images
+        run: |
+          docker load -i api-image.tar
+          docker load -i worker-image.tar
+      - name: Scan API image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: devops-api:ci
+          format: table
+          exit-code: "0"
+      - name: Scan Worker image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: devops-worker:ci
+          format: table
+          exit-code: "0"
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: scan
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Install kustomize
+        run: |
+          go install sigs.k8s.io/kustomize/kustomize/v5@v5.4.2
+          echo "$HOME/go/bin" >> "$GITHUB_PATH"
+      - name: Mock deploy
+        run: |
+          kustomize build k8s/overlays/prod > /tmp/prod.yaml
+          kustomize build k8s/monitoring > /tmp/monitoring.yaml
+          echo "Rendered prod manifests to /tmp/prod.yaml"
+          echo "Rendered monitoring manifests to /tmp/monitoring.yaml"

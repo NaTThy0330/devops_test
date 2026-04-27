@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: worker-config
+data:
+  PORT: "9090"
+  LOG_LEVEL: "info"
+  WORKER_INTERVAL_SECONDS: "60"
+  ENVIRONMENT: "base"

@@ -1,0 +1,6 @@
+namespace: devops-dev
+resources:
+  - ../../base/api
+  - ../../base/worker
+patchesStrategicMerge:
+  - env-patch.yaml

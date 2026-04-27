@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  labels:
+    app: devops-assignment
+    component: worker
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: devops-assignment
+      component: worker
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: devops-assignment
+        component: worker
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: /metrics
+    spec:
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: worker
+          image: devops-worker:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 9090
+          env:
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-config
+                  key: PORT
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-config
+                  key: LOG_LEVEL
+            - name: WORKER_INTERVAL_SECONDS
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-config
+                  key: WORKER_INTERVAL_SECONDS
+            - name: ENVIRONMENT
+              valueFrom:
+                configMapKeyRef:
+                  name: worker-config
+                  key: ENVIRONMENT
+            - name: WORKER_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: worker-secret
+                  key: WORKER_SECRET_KEY
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          livenessProbe:
+            exec:
+              command:
+                - /worker
+                - healthcheck
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 2
+            failureThreshold: 3

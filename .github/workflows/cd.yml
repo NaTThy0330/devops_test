@@ -1,0 +1,12 @@
+name: CD
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Mock deploy
+        run: echo "Deploying k8s/overlays/prod (mocked)"

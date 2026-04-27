@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: worker-service
+  labels:
+    app: devops-assignment
+    component: worker
+    version: v1
+spec:
+  type: ClusterIP
+  selector:
+    app: devops-assignment
+    component: worker
+    version: v1
+  ports:
+    - name: metrics
+      port: 9090
+      targetPort: metrics

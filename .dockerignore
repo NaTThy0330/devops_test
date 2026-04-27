@@ -1,0 +1,16 @@
+.gocache
+.gomodcache
+.git
+.github
+docs
+k8s
+readme.md
+structure.md
+testtobedone.md
+services/**/.git
+*.log
+!services/
+!services/**
+!third_party/
+!third_party/**
+!.dockerignore

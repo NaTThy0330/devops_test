@@ -1,0 +1,6 @@
+resources:
+  - rbac.yaml
+  - configmap.yaml
+  - alert-rules.yaml
+  - deployment.yaml
+  - service.yaml
