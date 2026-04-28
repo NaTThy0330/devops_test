@@ -84,13 +84,13 @@ jobs:
           docker load -i api-image.tar
           docker load -i worker-image.tar
       - name: Scan API image
-        uses: aquasecurity/trivy-action@v0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: devops-api:ci
           format: table
           exit-code: "0"
       - name: Scan Worker image
-        uses: aquasecurity/trivy-action@v0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: devops-worker:ci
           format: table
